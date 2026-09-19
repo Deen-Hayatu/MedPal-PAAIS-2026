@@ -16,7 +16,9 @@ MedPal is a live product used in clinical care, so its production codebase is pr
 
 ## The problem
 
-Ghana has roughly one doctor per 6,500 people, and 42% of its doctors work in Accra ([WHO Africa](https://www.afro.who.int/countries/ghana/news/stakeholders-urged-take-action-improve-distribution-doctors-ghana)). In district and rural facilities, the first clinician a patient sees is usually a nurse, physician assistant or junior doctor, often with no senior colleague on site. Staff in rural health centres describe phoning the district hospital when unsure what to do ([Bawontuo et al., BMC Family Practice, 2021](https://pmc.ncbi.nlm.nih.gov/articles/PMC7866672/)). The national treatment guideline exists, but it is a book, not an answer at the bedside.
+Ghana's challenge is not only the number of clinicians but their distribution. In 2018 the Ghana Health Service had 47,758 unfilled posts, a 41% gap against its own minimum staffing norms, and its best-staffed region was 2.17 times better staffed than its worst ([Asamani et al., Hum Resour Health, 2021](https://link.springer.com/article/10.1186/s12960-021-00590-3)). In the rural north, staff take on tasks above their level of training and beyond their job descriptions, often without training first ([Okyere et al., PLOS ONE, 2017](https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0174631)). Health-centre staff describe phoning the district hospital when unsure how to manage a case ([Bawontuo et al., BMC Family Practice, 2021](https://pmc.ncbi.nlm.nih.gov/articles/PMC7866672/)), and Ghanaian physician assistants find clinical decision-making harder to acquire than practical skills ([Niyogi et al., Afr J Emerg Med, 2015](https://www.sciencedirect.com/science/article/pii/S2211419X15000282)).
+
+Ghana already has national Standard Treatment Guidelines. The gap MedPal addresses is turning them into patient-specific support at the point of care, when senior expertise is not on site.
 
 ## How it works
 
@@ -25,7 +27,7 @@ flowchart LR
     A[Clinical note] --> B[De-identify on our server]
     B --> C[Search Ghana STG<br/>259 conditions]
     C --> D[Rerank best passages]
-    D --> E[LLM reasons over<br/>retrieved guideline text]
+    D --> E[LLM synthesises note +<br/>retrieved guideline text]
     E --> F[Deterministic safety layer]
     F --> G[Cited answer:<br/>differentials, treatment,<br/>investigations, safety status]
     E -. AI unavailable .-> H[Rules-based STG matcher]
@@ -36,7 +38,7 @@ flowchart LR
 |---|---|---|
 | De-identification | Patient names and ID numbers are replaced on our own server before any text leaves it | Local model (OpenMed), runs on our server |
 | Retrieval | Semantic + keyword search over the Ghana STG, then a cross-encoder reranks the best passages | Local models |
-| Reasoning | An LLM turns the note plus the retrieved guideline text into ranked differentials and an STG-based plan | **AI** (Claude Haiku 4.5 on Amazon Bedrock; swappable) |
+| Synthesis | An LLM combines the note with the retrieved guideline text into a differential and STG-grounded management suggestions, with citations | **AI** (Claude Haiku 4.5 on Amazon Bedrock; swappable) |
 | Safety | Emergencies are forced to "Emergency: refer now"; contraindications, pregnancy, paediatric dosing and missing-vitals checks run on every answer | **Rules**, not AI |
 | Citations | A citation is shown only if it came from the retrieved guideline text | Rules |
 | Fallback | If the AI is disabled or unreachable, a rules-based STG matcher still answers, with citations | Rules |
@@ -45,7 +47,13 @@ More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ## Where AI creates value, and where it is not allowed to decide
 
-The AI does the part people find hard to do quickly: reading a free-text presentation and producing a ranked differential and a guideline-based plan. The parts where a mistake could harm a patient are enforced in code: privacy, emergency escalation and citation integrity. See [docs/SAFETY_AND_EVALUATION.md](docs/SAFETY_AND_EVALUATION.md).
+The AI does the part that is slow to do by hand: combining a free-text presentation with the retrieved guideline into a differential and guideline-grounded management suggestions. The clinician decides. The parts where a mistake could harm a patient are enforced in code: privacy, emergency escalation and citation integrity. See [docs/SAFETY_AND_EVALUATION.md](docs/SAFETY_AND_EVALUATION.md).
+
+## Validation status
+
+MedPal has **engineering validation** today (50 Ghanaian test vignettes re-run on every release, about 95 automated tests, deterministic safety rules, de-identification tests). It is **not yet clinically validated**. Next: independent clinician review, STG concordance, unsafe-recommendation rate, emergency referral sensitivity, then a prospective pilot. See [docs/SAFETY_AND_EVALUATION.md](docs/SAFETY_AND_EVALUATION.md).
+
+**We are seeking clinical facilities and clinical or research partners for this evaluation.**
 
 ## Two ways to use it
 
@@ -76,6 +84,7 @@ See [examples/](examples/) for a request and response. All endpoints are under `
 - **Mohammad Deen Hayatu** - Founder and CEO, Haydeen Technologies. PhD candidate in human genetics (Universitätsklinikum Erlangen). Built MedPal and GhEHR.
 - **Osmanu Amadu** - Statistics and business (MSc Statistics; BSc Mathematics with Economics).
 - **Etaaf Sutura Usman** - UX/UI design.
+- **Clinical advisor** - recruiting: a clinical advisory and validation partner to lead MedPal's clinical evaluation.
 
 ## Contact
 
